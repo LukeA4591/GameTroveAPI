@@ -74,7 +74,7 @@ const view = async (req: Request, res: Response): Promise<void> => {
             const lName = result[0].last_name;
             const email = result[0].email;
             const tokenDB = result[0].auth_token;
-            const token = req.headers['X-Authorization'];
+            const token = req.header('X-Authorization');
             logger.info(typeof token);
             if (tokenDB === token) {
                 res.status(200).send({
