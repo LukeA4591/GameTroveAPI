@@ -96,7 +96,6 @@ const updateUser = async (userId: number, updateData: any): Promise<void> => {
         values.push(updateData.password);
     }
 
-    // Remove trailing comma
     query = query.slice(0, -2);
     query += ' WHERE id = ?';
     values.push(userId);

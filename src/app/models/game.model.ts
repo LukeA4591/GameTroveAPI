@@ -1,7 +1,5 @@
 import { getPool } from '../../config/db';
 import Logger from '../../config/logger';
-import { ResultSetHeader } from 'mysql2'
-import logger from "../../config/logger";
 
 const getGenres = async (): Promise<any> => {
     Logger.info(`Reading all genres`);
@@ -39,6 +37,18 @@ const getGame = async (id: number) : Promise<any> => {
     return gameRows[0];
 }
 
+const getAuth = async (token: string) : Promise<any> => {
+    const conn = await getPool().getConnection();
+    const query = `SELECT * FROM user WHERE auth_token = ?`;
+    const [authRows] = await conn.query(query, [token]);
+    await conn.release();
+    if (authRows.length > 0 && authRows[0].auth_token) {
+        return authRows[0];
+    } else {
+        return false;
+    }
+}
+
 const getGames = async (
     include?: string | null,
     genreIds?: string | null,
@@ -50,7 +60,7 @@ const getGames = async (
     ownedByMe?: boolean | null,
     wishlistedByMe?: boolean | null,
     token?: string | null
-): Promise<any> => {
+    ): Promise<any> => {
     const conn = await getPool().getConnection();
     let query = `select game.id as gameId, game.title, game.genre_id as genreId, game.creation_date as creationDate, game.creator_id as creatorId,
                     game.price, user.first_name as creatorFirstName, user.last_name as creatorLastName, CAST(AVG(game_review.rating) as float) as rating,
@@ -75,19 +85,17 @@ const getGames = async (
         conditions.push(`game.creator_id = ${creatorId}`);
     }
     if (ownedByMe) {
-        const userQuery = `SELECT * FROM user WHERE auth_token = ?`;
-        const [authRows] = await conn.query(userQuery, [token]);
-        if (authRows.length > 0 && authRows[0].auth_token) {
-            conditions.push(`owned.user_id = ${authRows[0].id}`);
+        const authUser = await getAuth(token)
+        if (authUser) {
+            conditions.push(`owned.user_id = ${authUser.id}`);
         } else {
             return 'no auth';
         }
     }
     if (wishlistedByMe) {
-        const userQuery = `SELECT * FROM user WHERE auth_token = ?`;
-        const [authRows] = await conn.query(userQuery, [token]);
-        if (authRows.length > 0 && authRows[0].auth_token) {
-            conditions.push(`wishlist.user_id = ${authRows[0].id}`);
+        const authUser = await getAuth(token)
+        if (authUser) {
+            conditions.push(`wishlist.user_id = ${authUser.id}`);
         } else {
             return 'no auth';
         }
@@ -149,6 +157,43 @@ const getGames = async (
     return rows;
 };
 
+const createGame = async (title?: string | null, description?: string | null, genreId?: number | null,
+                                              price?: number | null, platformIds?: string | null, token?: string | null
+                                              ) : Promise<any> => {
+    const conn = await getPool().getConnection();
+    let platformsArray: string[] = [];
+    const authUser = await getAuth(token)
+    const [existing]: any[] = await conn.query('SELECT id FROM game WHERE title = ?', [title]);
+    if (existing.length > 0) {
+        return 'TITLE_EXISTS';
+    }
+    const genre = Number(genreId);
+    if (isNaN(genre)) {
+        return 'INVALID_GENRE';
+    } else {
+        const [genreRows]: any[] = await conn.query('SELECT id FROM genre WHERE id = ?', [genreId]);
+        if (genreRows.length === 0) {
+            return 'INVALID_GENRE';
+        }
+    }
+    if (platformIds) {
+        platformsArray = Array.isArray(platformIds) ? platformIds : [platformIds];
+    }
+    const platformNumbers = platformsArray.map(id => Number(id));
+    const [platformRows]: any[] = await conn.query(`SELECT id FROM platform WHERE id IN (${platformNumbers.join(',')})`);
+    if (platformRows.length !== platformNumbers.length) {
+        return 'INVALID_PLATFORM';
+    }
+    const creatorId = authUser.id;
+    // Insert the new game. Assuming the game table has a column "creation_date" (using NOW() to record it).
+    const [result]: any = await conn.query('INSERT INTO game (title, description, genre_id, price, creation_date, creator_id) VALUES (?, ?, ?, ?, NOW(), ?)', [title, description, genreId, price, creatorId]);
+    const gameId = result.insertId;
+    for (const platformId of platformNumbers) {
+        await conn.query('INSERT INTO game_platforms (game_id, platform_id) VALUES (?, ?)', [gameId, platformId]);
+    }
+    await conn.release();
+    return gameId;
+};
 
 
-export { getGenres, getPlatforms, getGame, getGames }
+export { getGenres, getPlatforms, getGame, getGames, createGame, getAuth }
