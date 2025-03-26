@@ -16,6 +16,7 @@ const getImage = async (req: Request, res: Response): Promise<void> => {
         const result = await gameImage.getGameImage(gameId);
         if (result === 'DNE') {
             res.status(404).send();
+            return;
         }
         const imagePath = path.join(__dirname, "../../../storage/images", result);
         res.sendFile(imagePath);

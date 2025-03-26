@@ -16,8 +16,9 @@ const getGameReviews = async(req: Request, res: Response): Promise<void> => {
         const result = await reviews.getReviews(gameId);
         if (result.length === 0) {
             res.status(404).send();
+        } else {
+            res.status(200).send(result);
         }
-        res.status(200).send(result);
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
@@ -32,6 +33,7 @@ const addGameReview = async(req: Request, res: Response): Promise<void> => {
         const auth = await games.getAuth(token);
         if (validation !== true) {
             res.status(400).send();
+            return;
         }
         const gameId = parseInt(req.params.id, 10);
         if (isNaN(gameId)) {
