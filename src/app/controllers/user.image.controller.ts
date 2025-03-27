@@ -7,7 +7,6 @@ import fs from "fs";
 
 
 const getImage = async (req: Request, res: Response): Promise<void> => {
-    const id = req.params.id;
     try {
         const userId = parseInt(req.params.id, 10);
         if (isNaN(userId)) {
@@ -40,14 +39,12 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
         if (isNaN(userId)) {
             res.status(400).send();
             return;
-        }
-        if (userId !== auth.id) {
+        } else if (userId !== auth.id) {
             res.status(403).send();
             return;
         }
         const contentType = req.header("Content-Type");
         let ext: string;
-
         if (contentType === "image/jpeg") {
             ext = ".jpg";
         } else if (contentType === "image/png") {
@@ -60,6 +57,13 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
         }
         const filename = `game_${userId}${ext}`;
         const imagePath = path.join(__dirname, "../../../storage/images", filename);
+        const previousImagePath = await userImage.getUserImage(userId);
+        if (previousImagePath && previousImagePath !== filename) {
+            const fullPrevPath = path.join(__dirname, "../../../storage/images", previousImagePath);
+            if (fs.existsSync(fullPrevPath)) {
+                fs.unlinkSync(fullPrevPath);
+            }
+        }
         const writeStream = fs.createWriteStream(imagePath);
         req.pipe(writeStream);
         writeStream.on("error", (err: any) => {

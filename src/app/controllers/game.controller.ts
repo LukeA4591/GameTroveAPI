@@ -22,7 +22,8 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
         const token = req.header('X-Authorization');
         const validation = await validate(schemas.game_search, req.query);
         if (validation !== true) {
-            res.status(400).send();
+            res.status(400).send({ error: "Invalid game search" });
+            return;
         }
         let gameList = await games.getGames(
             include,
@@ -39,12 +40,20 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
         if (gameList === 'no auth') {
             res.status(401).send();
             return;
-        }
-        const numGames = gameList.length;
-        if (numGames === 0) {
-            res.status(400).send();
+        } else if (gameList === 'REVIEW_ID_DNE') {
+            res.status(400).send({ error: "Invalid reviewer ID" });
+            return;
+        } else if (gameList === 'CREATOR_ID_DNE') {
+            res.status(400).send({ error: "Invalid creator ID" });
+            return;
+        } else if (gameList === 'GENRE_ID_DNE') {
+            res.status(400).send({ error: "Invalid genre ID" });
+            return;
+        } else if (gameList === 'PLATFORM_ID_DNE') {
+            res.status(400).send({ error: "Invalid platform ID" });
             return;
         }
+        const numGames = gameList.length;
         for (const game of gameList) {
             const platforms = game.platformIds.split(',').map(Number);
             game.platformIds = platforms;

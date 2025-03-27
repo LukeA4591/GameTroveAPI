@@ -63,27 +63,28 @@ const getGames = async (
     ): Promise<any> => {
     const conn = await getPool().getConnection();
     try {
-        let query = `select game.id                                           as gameId,
+        const checkIdQuery = `SELECT * FROM user WHERE id = ?`;
+        const checkGenresQuery = `SELECT * FROM genre WHERE id = ?`;
+        const checkPlatformQuery = `SELECT * FROM platform WHERE id = ?;`;
+        let query = `select game.id as gameId,
                             game.title,
-                            game.genre_id                                     as genreId,
-                            game.creation_date                                as creationDate,
-                            game.creator_id                                   as creatorId,
+                            game.genre_id as genreId,
+                            game.creation_date as creationDate,
+                            game.creator_id as creatorId,
                             game.price,
-                            user.first_name                                   as creatorFirstName,
-                            user.last_name                                    as creatorLastName,
-                            CAST(AVG(game_review.rating) as float)            as rating,
+                            user.first_name as creatorFirstName,
+                            user.last_name as creatorLastName,
+                            CAST(AVG(game_review.rating) as float) as rating,
                             group_concat(distinct game_platforms.platform_id) as platformIds
-                     from game
-                              left join user on creator_id = user.id
-                              left join game_review on game.id = game_review.game_id
-                              left join game_platforms on game.id = game_platforms.game_id
-                              left join owned on game.id = owned.game_id
-                              left join wishlist on game.id = wishlist.game_id `;
-
+                            from game
+                            left join user on creator_id = user.id
+                            left join game_review on game.id = game_review.game_id
+                            left join game_platforms on game.id = game_platforms.game_id
+                            left join owned on game.id = owned.game_id
+                            left join wishlist on game.id = wishlist.game_id `;
         const conditions: string[] = [];
         let genresArray: string[] = [];
         let platformsArray: string[] = [];
-
         if (include) {
             conditions.push(`(game.description LIKE '%${include}%' OR game.title LIKE '%${include}%')`);
         }
@@ -110,6 +111,40 @@ const getGames = async (
                 conditions.push(`wishlist.user_id = ${authUser.id}`);
             } else {
                 return 'no auth';
+            }
+        }
+        if (reviewerId || reviewerId === 0) {
+            const [reviewerRows] = await conn.query(checkIdQuery, [reviewerId]);
+            if (reviewerRows.length === 0) {
+                await conn.release();
+                return 'REVIEW_ID_DNE';
+            }
+        }
+        if (creatorId || creatorId === 0) {
+            const [creatorRows] = await conn.query(checkIdQuery, [creatorId]);
+            if (creatorRows.length === 0) {
+                await conn.release();
+                return 'CREATOR_ID_DNE';
+            }
+        }
+        if (genreIds) {
+            genresArray = Array.isArray(genreIds) ? genreIds : [genreIds];
+            for (const genreId of genresArray) {
+                const [genreRows] = await conn.query(checkGenresQuery, [genreId]);
+                if (genreRows.length === 0) {
+                    await conn.release();
+                    return 'GENRE_ID_DNE';
+                }
+            }
+        }
+        if (platformIds) {
+            platformsArray = Array.isArray(platformIds) ? platformIds : [platformIds];
+            for (const platformId of platformsArray) {
+                const [platformRows] = await conn.query(checkPlatformQuery, [platformId]);
+                if (platformRows.length === 0) {
+                    await conn.release();
+                    return 'PLATFORM_ID_DNE';
+                }
             }
         }
         if (genreIds) {

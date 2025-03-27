@@ -56,6 +56,13 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
         }
         const filename = `game_${gameId}${ext}`;
         const imagePath = path.join(__dirname, "../../../storage/images", filename);
+        const previousImagePath = await gameImage.getGameImage(userId);
+        if (previousImagePath && previousImagePath !== filename) {
+            const fullPrevPath = path.join(__dirname, "../../../storage/images", previousImagePath);
+            if (fs.existsSync(fullPrevPath)) {
+                fs.unlinkSync(fullPrevPath);
+            }
+        }
         const writeStream = fs.createWriteStream(imagePath);
         req.pipe(writeStream);
         writeStream.on("error", (err: any) => {
