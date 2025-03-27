@@ -2,8 +2,6 @@ import {Request, Response} from "express";
 import Logger from "../../config/logger";
 import * as games from "../models/game.model";
 import * as gameAcitons from "../models/game.action.model";
-import * as schemas from '../resources/schemas.json';
-import { validate } from "../services/validator";
 
 
 const addGameToWishlist = async(req: Request, res: Response): Promise<void> => {

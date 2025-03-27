@@ -76,6 +76,9 @@ const getGame = async(req: Request, res: Response): Promise<void> => {
             return;
         }
         const game = await games.getGame(parseInt(id, 10));
+        if (game === null) {
+            res.status(404).send();
+        }
         const platforms = game.platformIds.split(',').map(Number);
         game.platformIds = platforms;
         if (game.rating === null) {
@@ -126,8 +129,37 @@ const addGame = async(req: Request, res: Response): Promise<void> => {
 
 const editGame = async(req: Request, res: Response): Promise<void> => {
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        const title = req.body.title;
+        const description = req.body.description;
+        const genreId = req.body.genreId;
+        const price = req.body.price;
+        const platformIds = req.body.platformIds;
+        const token = req.header('X-Authorization');
+        const validation = await validate(schemas.game_post, req.body);
+        const auth = await games.getAuth(token);
+        if (!auth) {
+            res.status(401).send({error: "auth"});
+            return;
+        }
+        const userId = auth.id as number;
+        const gameId = parseInt(req.params.id, 10);
+        if (isNaN(gameId)) {
+            res.status(400).send({error: "game id"});
+            return;
+        } else if (validation !== true) {
+            res.status(400).send({error: "validation"});
+            return;
+        }
+        const result = await games.editGame(title, description, genreId, price, platformIds, gameId, userId);
+        if (result === 'GAME_DNE') {
+            res.status(404).send({error: "Game doesnt exist"});
+        } else if (result === 'NOT_CREATOR') {
+            res.status(403).send({error: "Not Creator of Game"});
+        } else if (result === 'TITLE_EXISTS') {
+            res.status(403).send({error: "Title already in use"});
+        } else if (result === 'SUCCESS') {
+            res.status(200).send();
+        }
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
@@ -137,8 +169,28 @@ const editGame = async(req: Request, res: Response): Promise<void> => {
 
 const deleteGame = async(req: Request, res: Response): Promise<void> => {
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        const token = req.header('X-Authorization');
+        const auth = await games.getAuth(token);
+        if (!auth) {
+            res.status(401).send({error: "auth"});
+            return;
+        }
+        const userId = auth.id as number;
+        const gameId = parseInt(req.params.id, 10);
+        if (isNaN(gameId)) {
+            res.status(400).send({error: "game id"});
+            return;
+        }
+        const result = await games.deleteGame(gameId, userId);
+        if (result === 'GAME_DNE') {
+            res.status(404).send({error: "Game doesnt exist"});
+        } else if (result === 'NOT_CREATOR') {
+            res.status(403).send({error: "Not Creator of Game"});
+        } else if (result === 'GAME_REVIEWED') {
+            res.status(403).send({error: "Game already reviewed"});
+        } else if (result === 'SUCCESS') {
+            res.status(200).send();
+        }
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
