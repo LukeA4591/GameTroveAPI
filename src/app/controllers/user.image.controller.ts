@@ -55,29 +55,24 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
             res.status(400).send({ error: "Unsupported image type" });
             return;
         }
-        const filename = `game_${userId}${ext}`;
+        const filename = `user_${userId}${ext}`;
         const imagePath = path.join(__dirname, "../../../storage/images", filename);
-        const previousImagePath = await userImage.getUserImage(userId);
-        if (previousImagePath && previousImagePath !== filename) {
-            const fullPrevPath = path.join(__dirname, "../../../storage/images", previousImagePath);
-            if (fs.existsSync(fullPrevPath)) {
-                fs.unlinkSync(fullPrevPath);
-            }
-        }
         const writeStream = fs.createWriteStream(imagePath);
         req.pipe(writeStream);
         writeStream.on("error", (err: any) => {
             Logger.error(err);
             res.status(500).send({ error: "Failed to save image" });
         });
-        const result = await userImage.setUserImage(userId, filename);
-        if (result === true) {
-            res.status(201).send();
-        } else if (result === false) {
-            res.status(200).send();
-        } else if (result === 'DNE') {
-            res.status(404).send();
-        }
+        writeStream.on("finish", async () => {
+            const result = await userImage.setUserImage(userId, filename);
+            if (result === true) {
+                res.status(201).send();
+            } else if (result === false) {
+                res.status(200).send();
+            } else if (result === 'DNE') {
+                res.status(404).send();
+            }
+        });
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";

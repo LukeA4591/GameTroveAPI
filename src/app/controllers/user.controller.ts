@@ -14,7 +14,11 @@ const register = async (req: Request, res: Response): Promise<void> => {
     const { firstName, lastName, email, password } = req.body;
     try {
         const result = await users.insert(firstName, lastName, email, password);
-        res.status(201).send({ userId: result.insertId });
+        if (result === 'EMAIL_IN_USE') {
+            res.status(403).send();
+        } else {
+            res.status(201).send({ userId: result.insertId });
+        }
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
@@ -71,7 +75,6 @@ const view = async (req: Request, res: Response): Promise<void> => {
     const userId = req.params.id;
     try {
         const result = await users.read(parseInt(userId, 10));
-
         if (result.length === 0) {
             res.status(404).send({ error: "User not found" });
             return;

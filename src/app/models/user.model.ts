@@ -2,12 +2,17 @@ import { getPool } from '../../config/db';
 import Logger from '../../config/logger';
 import { ResultSetHeader } from 'mysql2'
 
-const insert= async (fName: string, lName: string, email: string, password: string) : Promise<ResultSetHeader> => {
+const insert= async (fName: string, lName: string, email: string, password: string) : Promise<any> => {
     Logger.info(`Adding user: ${fName} ${lName}, to the database`);
     const conn = await getPool().getConnection();
+    const checkEmailQuery = `select * from user where email = ?`;
     const query = 'insert into user (first_name, last_name, email, password) values ( ?, ?, ?, ? )';
+    const [ emailResult ] = await conn.query(checkEmailQuery, [email]);
     const [ result ] = await conn.query(query, [ fName, lName, email, password ]);
     await conn.release();
+    if (emailResult.length > 0) {
+        return 'EMAIL_IN_USE';
+    }
     return result;
 }
 
