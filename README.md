@@ -1,52 +1,82 @@
-# SENG365 Assignment 1 API Server (Game Review Site)
+# Game Review API Server
 
-## Running locally
+This is a Node.js and Express REST API for managing game reviews, built as part of the SENG365 course.
 
-1. Use `npm install` to populate the `node_modules/` directory with up-to-date packages
-2. Create a file called `.env`, following the instructions in the section below
-3. Go to https://dbadmin.csse.canterbury.ac.nz and create a database with the name that you set in the `.env` file
-2. Run `npm run start` or `npm run debug` to start the server
-3. The server will be accessible on `http://localhost:4941`
+## Features
 
-### `.env` file
+- User authentication and authorization
+- Game creation, retrieval, and updating
+- Review submission and retrieval
+- MySQL database integration
 
-Create a `.env` file in the root directory of this project including the following information (note that you will need
-to create the database first in phpMyAdmin):
+## Getting Started
+
+Follow these instructions to run the API locally.
+
+### Prerequisites
+
+- Node.js (v14 or higher recommended)
+- npm
+- MySQL database
+
+### Installation
+
+1. Clone the repository:
+
+   ```
+   git clone https://github.com/your-username/game-review-api.git
+   cd game-review-api
+   ```
+
+2. Install dependencies:
+
+   ```
+   npm install
+   ```
+
+3. Create a `.env` file in the root directory with your database credentials:
+
+   ```
+   SENG365_MYSQL_HOST={your host}
+   SENG365_MYSQL_USER={your user}
+   SENG365_MYSQL_PASSWORD={your password}
+   SENG365_MYSQL_DATABASE={your database name}
+   ```
+
+   **Example:**
+   ```
+   SENG365_MYSQL_HOST=db2.csse.canterbury.ac.nz
+   SENG365_MYSQL_USER=abc123
+   SENG365_MYSQL_PASSWORD=password
+   SENG365_MYSQL_DATABASE=abc123_s365
+   ```
+
+### Running the Server
+
+To start the server in production mode:
 
 ```
-SENG365_MYSQL_HOST=db2.csse.canterbury.ac.nz
-SENG365_MYSQL_USER={your usercode}
-SENG365_MYSQL_PASSWORD={your password}
-SENG365_MYSQL_DATABASE={a database starting with your usercode then an underscore}
+npm run start
 ```
 
-For example:
+To start the server with debugging enabled:
 
 ```
-SENG365_MYSQL_HOST=db2.csse.canterbury.ac.nz
-SENG365_MYSQL_USER=abc123
-SENG365_MYSQL_PASSWORD=password
-SENG365_MYSQL_DATABASE=abc123_s365
+npm run debug
 ```
 
-## Some notes about endpoint status codes
+By default, the server runs on [http://localhost:4941](http://localhost:4941).
 
-The api spec provides several status codes that each endpoint can return. Apart from the 500 'Internal Server Error'
-each of these represents a flow that may be tested. Hopefully from the labs you have seen these status codes before and
-have an understanding of what each represents. A brief overview is provided in the table below.
+## API Overview
 
-| Status Code | Status Message | Description                                    | Example                                                     |
-|:------------|----------------|------------------------------------------------|-------------------------------------------------------------|
-| 200         | OK             | Request completed successfully                 | Successfully get games                                      |
-| 201         | Created        | Resources created successfully                 | Successfully create game                                    |
-| 400         | Bad Request    | The request failed due to client error         | Creating a game without a request body                      |
-| 401         | Unauthorised   | The requested failed due invalid authorisation | Creating a game without authorisation header                |
-| 403         | Forbidden      | The request is refused by the server           | Creating a game using an existing name                      |
-| 404         | Not Found      | The requested item does not exist              | Trying to find information about a game that doesn't exist  |
+The API provides endpoints for:
 
-## Final notes
+- User registration and login
+- Managing games
+- Submitting and viewing reviews
 
-The Bruno collection provided in `/bruno_test_suite` is a subset of tests/requests that you will be marked against so passing these tests should be your highest priority.
-You are more than welcome to add your own tests/requests to the collection provided to increase your testing coverage, however it is a good idea to also validate any new tests against the reference server to ensure you are expecting the right outcome.
+Refer to the API specification or project documentation for full endpoint details.
 
-If you find an inconsistency or issue with the reference server please reach out to the SENG365 shared mailbox `seng365@canterbury.ac.nz`.
+## Author
+
+Luke Armstrong
